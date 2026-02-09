@@ -214,8 +214,11 @@ def add_spec(x: Float32[32,]) -> Float32[32,]:
 def add_kernel(x_ptr, z_ptr, N0, B0: tl.constexpr):
     # We name the offsets of the pointers as "off_"
     off_x = tl.arange(0, B0)
-    x = tl.load(x_ptr + off_x)
+    x = tl.load(x_ptr + off_x, off_x < N0)
     # Finish me!
+    off_z = tl.arange(0, B0)
+    ret = x + 10
+    tl.store(z_ptr + off_z, ret, off_z < N0)
     return
 
 
