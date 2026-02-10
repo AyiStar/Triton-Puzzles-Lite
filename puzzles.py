@@ -309,6 +309,15 @@ def add_vec_block_kernel(
     block_id_x = tl.program_id(0)
     block_id_y = tl.program_id(1)
     # Finish me!
+    off_x = (tl.arange(0, B0) + (block_id_x * B0))[None, :]
+    off_y = (tl.arange(0, B1) + (block_id_y * B1) )[:, None]
+    range_x = off_y * 0 + off_x
+    range_y = off_y + off_x * 0
+    range_z = off_y * N0 + off_x
+    x = tl.load(x_ptr + range_x, (off_x < N0) & (off_y < N1))
+    y = tl.load(y_ptr + range_y, (off_x < N0) & (off_y < N1))
+    z = x + y
+    tl.store(z_ptr + range_z, z, (off_x < N0) & (off_y < N1))
     return
 
 
