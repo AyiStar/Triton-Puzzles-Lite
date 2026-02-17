@@ -345,6 +345,23 @@ def mul_relu_block_kernel(
     block_id_x = tl.program_id(0)
     block_id_y = tl.program_id(1)
     # Finish me!
+    x_offset = (tl.arange(0, B0) + (block_id_x * B0))[None, :]
+    x_mask = (x_offset < N0)
+    
+    y_offset = (tl.arange(0, B1) + (block_id_y * B1))[:, None]
+    y_mask = (y_offset < N1)
+    
+    x_2D_range = y_offset * 0 + x_offset
+    y_2D_range = y_offset + x_offset * 0
+    z_2D_range = y_offset * N0 + x_offset
+    
+    x_2D = tl.load(x_ptr + x_2D_range, mask=x_mask)
+    y_2D = tl.load(y_ptr + y_2D_range, mask=y_mask)
+    
+    z = x_2D * y_2D
+    # z_relu = tl.maximum(z, tl.zeros((B1, B0), tl.float32))
+    z_relu = tl.maximum(z, 0)
+    tl.store(z_ptr + z_2D_range, z_relu, mask=(x_mask & y_mask))
     return
 
 
