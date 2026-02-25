@@ -399,7 +399,30 @@ def mul_relu_block_back_kernel(
 ):
     block_id_i = tl.program_id(0)
     block_id_j = tl.program_id(1)
-    # Finish me!
+    
+    # load dz
+    offset_i = (tl.arange(0, B0) + (block_id_i * B0))[None, :]
+    offset_j = (tl.arange(0, B1) + (block_id_j * B1))[:, None]
+    dz_2D_range = offset_j * N0 + offset_i
+    dz_2D = tl.load(dz_ptr + dz_2D_range, mask=(offset_i < N0) & (offset_j < N1))
+    
+    # load y
+    y_2D_range = offset_j + offset_i * 0
+    y_2D = tl.load(y_ptr + y_2D_range, mask=(offset_i < N0) & (offset_j < N1))
+    
+    # load x
+    x_2D_range = dz_2D_range
+    x_2D = tl.load(x_ptr + x_2D_range, mask=(offset_i < N0) & (offset_j < N1))
+    
+    # compute x * y
+    xy_2D = x_2D * y_2D
+    
+    # compute dx = dz * y * (xy > 0)
+    dx_2D = y_2D * dz_2D * (xy_2D > 0).to(tl.float32)
+    
+    # store dx
+    dx_2D_range = dz_2D_range
+    tl.store(dx_ptr + dx_2D_range, dx_2D, mask=(offset_i < N0) & (offset_j < N1))
     return
 
 
